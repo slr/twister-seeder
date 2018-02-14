@@ -23,7 +23,7 @@ void CAddrInfo::Update(bool good) {
   stat1M.Update(good, age, 3600*24*30);
   int ign = GetIgnoreTime();
   if (ign && (ignoreTill==0 || ignoreTill < ign+now)) ignoreTill = ign+now;
-//  printf("%s: got %s result: success=%i/%i; 2H:%.2f%%-%.2f%%(%.2f) 8H:%.2f%%-%.2f%%(%.2f) 1D:%.2f%%-%.2f%%(%.2f) 1W:%.2f%%-%.2f%%(%.2f) \n", ToString(ip).c_str(), good ? "good" : "bad", success, total, 
+//  printf("%s: got %s result: success=%i/%i; 2H:%.2f%%-%.2f%%(%.2f) 8H:%.2f%%-%.2f%%(%.2f) 1D:%.2f%%-%.2f%%(%.2f) 1W:%.2f%%-%.2f%%(%.2f) \n", ToString(ip).c_str(), good ? "good" : "bad", success, total,
 //  100.0 * stat2H.reliability, 100.0 * (stat2H.reliability + 1.0 - stat2H.weight), stat2H.count,
 //  100.0 * stat8H.reliability, 100.0 * (stat8H.reliability + 1.0 - stat8H.weight), stat8H.count,
 //  100.0 * stat1D.reliability, 100.0 * (stat1D.reliability + 1.0 - stat1D.weight), stat1D.count,
@@ -166,7 +166,7 @@ void CAddrDb::Add_(const CAddress &addr, bool force) {
   nDirty++;
 }
 
-void CAddrDb::GetIPs_(set<CService>& ips, int max, const bool* nets) {
+void CAddrDb::GetIPs_(set<CService>& ips, uint64_t requestedFlags, int max, const bool* nets) {
   if (goodId.size() == 0) {
     int id = -1;
     if (ourId.size() == 0) {
@@ -175,23 +175,28 @@ void CAddrDb::GetIPs_(set<CService>& ips, int max, const bool* nets) {
     } else {
       id = *ourId.begin();
     }
-    if (id >= 0) {
+    if (id >= 0 && (idToInfo[id].services & requestedFlags) == requestedFlags) {
       ips.insert(idToInfo[id].ip);
     }
     return;
   }
-  if (max > goodId.size() / 1) // [MF] /2
-    max = goodId.size() / 1; // [MF] /2
+  std::vector<int> goodIdFiltered;
+  for (std::set<int>::const_iterator it = goodId.begin(); it != goodId.end(); it++) {
+    if ((idToInfo[*it].services & requestedFlags) == requestedFlags)
+      goodIdFiltered.push_back(*it);
+  }
+
+  if (!goodIdFiltered.size())
+    return;
+
+  if (max > goodIdFiltered.size() / 1) // [MF] /2
+    max = goodIdFiltered.size() / 1; // [MF] /2
   if (max < 1)
     max = 1;
-  int low = *goodId.begin();
-  int high = *goodId.rbegin();
+
   set<int> ids;
   while (ids.size() < max) {
-    int range = high-low+1;
-    int pos = low + (rand() % range);
-    int id = *(goodId.lower_bound(pos));
-    ids.insert(id);
+    ids.insert(goodIdFiltered[rand() % goodIdFiltered.size()]);
   }
   for (set<int>::const_iterator it = ids.begin(); it != ids.end(); it++) {
     CService &ip = idToInfo[*it].ip;

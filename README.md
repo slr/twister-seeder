@@ -1,7 +1,7 @@
 Twister-seeder
 ==============
 
-Twister-seeder is a crawler for the [Twister](http://twister.net.co) 
+Twister-seeder is a crawler for the [Twister](http://twister.net.co)
 ([github](https://github.com/miguelfreitas/twister-core)) network,
 which exposes a list of reliable nodes via a built-in DNS server.
 
@@ -16,6 +16,11 @@ Features:
   1 day and 1 week, to base decisions on.
 * very low memory (a few tens of megabytes) and cpu requirements.
 * crawlers run in parallel (by default 96 threads simultaneously).
+
+REQUIREMENTS
+------------
+
+    sudo apt install build-essential libboost-all-dev libssl-dev
 
 USAGE
 -----
@@ -40,7 +45,17 @@ On the system vps.example.com, you can now run dnsseed:
     ./dnsseed -h dnsseed.example.com -n vps.example.com
 
 If you want the DNS server to report SOA records, please provide an
-e-mailadres (with the @ part replaced by .) using `-m`.
+e-mail address (with the @ part replaced by .) using -m.
+
+COMPILING
+---------
+
+Compiling will require boost and ssl.  On debian systems, these are provided
+by `libboost-dev` and `libssl-dev` respectively.
+
+    make
+
+This will produce the `dnsseed` binary.
 
 RUNNING AS NON-ROOT
 -------------------
